@@ -18,7 +18,8 @@ class EmployeController extends Controller
         $query = Employe::with('entreprise');
         
         if (!auth()->user()->isAdmin()) {
-            $query->where('entreprise_id', auth()->user()->entreprise_id);
+            $accessibleEntreprises = auth()->user()->getAccessibleEntreprises();
+            $query->whereIn('entreprise_id', $accessibleEntreprises);
         }
         
         $employes = $query->paginate(10);
@@ -29,7 +30,7 @@ class EmployeController extends Controller
     {
         $entreprises = auth()->user()->isAdmin() 
             ? Entreprise::all() 
-            : Entreprise::where('id', auth()->user()->entreprise_id)->get();
+            : Entreprise::whereIn('id', auth()->user()->getAccessibleEntreprises())->get();
             
         return view('employes.create', compact('entreprises'));
     }
@@ -49,7 +50,7 @@ class EmployeController extends Controller
             'departement' => 'nullable|string',
         ]);
 
-        if (!auth()->user()->isAdmin() && $validated['entreprise_id'] != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($validated['entreprise_id'])) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -61,7 +62,7 @@ class EmployeController extends Controller
 
     public function show(Employe $employe)
     {
-        if (!auth()->user()->isAdmin() && $employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -71,20 +72,20 @@ class EmployeController extends Controller
 
     public function edit(Employe $employe)
     {
-        if (!auth()->user()->isAdmin() && $employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
         $entreprises = auth()->user()->isAdmin() 
             ? Entreprise::all() 
-            : Entreprise::where('id', auth()->user()->entreprise_id)->get();
+            : Entreprise::whereIn('id', auth()->user()->getAccessibleEntreprises())->get();
             
         return view('employes.edit', compact('employe', 'entreprises'));
     }
 
     public function update(Request $request, Employe $employe)
     {
-        if (!auth()->user()->isAdmin() && $employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -102,7 +103,7 @@ class EmployeController extends Controller
             'departement' => 'nullable|string',
         ]);
 
-        if (!auth()->user()->isAdmin() && $validated['entreprise_id'] != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($validated['entreprise_id'])) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -114,7 +115,7 @@ class EmployeController extends Controller
 
     public function destroy(Employe $employe)
     {
-        if (!auth()->user()->isAdmin() && $employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 

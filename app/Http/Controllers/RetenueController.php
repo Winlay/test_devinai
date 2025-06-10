@@ -18,8 +18,9 @@ class RetenueController extends Controller
         $query = Retenue::with('employe.entreprise');
         
         if (!auth()->user()->isAdmin()) {
-            $query->whereHas('employe', function($q) {
-                $q->where('entreprise_id', auth()->user()->entreprise_id);
+            $accessibleEntreprises = auth()->user()->getAccessibleEntreprises();
+            $query->whereHas('employe', function($q) use ($accessibleEntreprises) {
+                $q->whereIn('entreprise_id', $accessibleEntreprises);
             });
         }
         
@@ -33,7 +34,7 @@ class RetenueController extends Controller
     {
         $employes = auth()->user()->isAdmin() 
             ? Employe::with('entreprise')->get()
-            : Employe::where('entreprise_id', auth()->user()->entreprise_id)->get();
+            : Employe::whereIn('entreprise_id', auth()->user()->getAccessibleEntreprises())->get();
             
         return view('retenues.create', compact('employes'));
     }
@@ -53,7 +54,7 @@ class RetenueController extends Controller
 
         $employe = Employe::findOrFail($validated['employe_id']);
         
-        if (!auth()->user()->isAdmin() && $employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -65,7 +66,7 @@ class RetenueController extends Controller
 
     public function show(Retenue $retenue)
     {
-        if (!auth()->user()->isAdmin() && $retenue->employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($retenue->employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -75,20 +76,20 @@ class RetenueController extends Controller
 
     public function edit(Retenue $retenue)
     {
-        if (!auth()->user()->isAdmin() && $retenue->employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($retenue->employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
         $employes = auth()->user()->isAdmin() 
             ? Employe::with('entreprise')->get()
-            : Employe::where('entreprise_id', auth()->user()->entreprise_id)->get();
+            : Employe::whereIn('entreprise_id', auth()->user()->getAccessibleEntreprises())->get();
             
         return view('retenues.edit', compact('retenue', 'employes'));
     }
 
     public function update(Request $request, Retenue $retenue)
     {
-        if (!auth()->user()->isAdmin() && $retenue->employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($retenue->employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -105,7 +106,7 @@ class RetenueController extends Controller
 
         $employe = Employe::findOrFail($validated['employe_id']);
         
-        if (!auth()->user()->isAdmin() && $employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -117,7 +118,7 @@ class RetenueController extends Controller
 
     public function destroy(Retenue $retenue)
     {
-        if (!auth()->user()->isAdmin() && $retenue->employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($retenue->employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 

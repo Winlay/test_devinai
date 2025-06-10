@@ -32,21 +32,22 @@ class DashboardController extends Controller
                                              ->take(5)
                                              ->get();
         } elseif ($user->isResponsableEntreprise()) {
+            $accessibleEntreprises = $user->getAccessibleEntreprises();
             $stats = [
-                'employes' => Employe::where('entreprise_id', $user->entreprise_id)->count(),
-                'bulletins_mois' => BulletinSalaire::where('entreprise_id', $user->entreprise_id)
+                'employes' => Employe::whereIn('entreprise_id', $accessibleEntreprises)->count(),
+                'bulletins_mois' => BulletinSalaire::whereIn('entreprise_id', $accessibleEntreprises)
                                                   ->whereMonth('date_generation', now()->month)
                                                   ->whereYear('date_generation', now()->year)
                                                   ->count(),
-                'salaire_total_mois' => BulletinSalaire::where('entreprise_id', $user->entreprise_id)
+                'salaire_total_mois' => BulletinSalaire::whereIn('entreprise_id', $accessibleEntreprises)
                                                        ->whereMonth('date_generation', now()->month)
                                                        ->whereYear('date_generation', now()->year)
                                                        ->sum('salaire_net'),
             ];
             
-            $entreprises = collect([$user->entreprise]);
+            $entreprises = Entreprise::whereIn('id', $accessibleEntreprises)->get();
             $recentBulletins = BulletinSalaire::with(['employe', 'entreprise'])
-                                             ->where('entreprise_id', $user->entreprise_id)
+                                             ->whereIn('entreprise_id', $accessibleEntreprises)
                                              ->latest()
                                              ->take(5)
                                              ->get();

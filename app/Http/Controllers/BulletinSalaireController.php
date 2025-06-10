@@ -25,7 +25,8 @@ class BulletinSalaireController extends Controller
                 $q->where('user_id', auth()->id());
             });
         } elseif (auth()->user()->isResponsableEntreprise()) {
-            $query->where('entreprise_id', auth()->user()->entreprise_id);
+            $accessibleEntreprises = auth()->user()->getAccessibleEntreprises();
+            $query->whereIn('entreprise_id', $accessibleEntreprises);
         }
         
         if ($request->filled('entreprise_id') && auth()->user()->isAdmin()) {
@@ -55,7 +56,7 @@ class BulletinSalaireController extends Controller
 
         $employes = auth()->user()->isAdmin() 
             ? Employe::with('entreprise')->get()
-            : Employe::where('entreprise_id', auth()->user()->entreprise_id)->get();
+            : Employe::whereIn('entreprise_id', auth()->user()->getAccessibleEntreprises())->get();
             
         return view('bulletins.create', compact('employes'));
     }
@@ -74,7 +75,7 @@ class BulletinSalaireController extends Controller
 
         $employe = Employe::findOrFail($validated['employe_id']);
         
-        if (!auth()->user()->isAdmin() && $employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -96,7 +97,7 @@ class BulletinSalaireController extends Controller
                 abort(403, 'Accès non autorisé');
             }
         } elseif (auth()->user()->isResponsableEntreprise()) {
-            if ($bulletin->entreprise_id != auth()->user()->entreprise_id) {
+            if (!auth()->user()->hasAccessToEntreprise($bulletin->entreprise_id)) {
                 abort(403, 'Accès non autorisé');
             }
         }
@@ -112,7 +113,7 @@ class BulletinSalaireController extends Controller
                 abort(403, 'Accès non autorisé');
             }
         } elseif (auth()->user()->isResponsableEntreprise()) {
-            if ($bulletin->entreprise_id != auth()->user()->entreprise_id) {
+            if (!auth()->user()->hasAccessToEntreprise($bulletin->entreprise_id)) {
                 abort(403, 'Accès non autorisé');
             }
         }
@@ -141,7 +142,7 @@ class BulletinSalaireController extends Controller
 
         $entreprise = \App\Models\Entreprise::findOrFail($validated['entreprise_id']);
         
-        if (auth()->user()->isResponsableEntreprise() && $entreprise->id != auth()->user()->entreprise_id) {
+        if (auth()->user()->isResponsableEntreprise() && !auth()->user()->hasAccessToEntreprise($entreprise->id)) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -170,7 +171,7 @@ class BulletinSalaireController extends Controller
             abort(403, 'Accès non autorisé');
         }
 
-        if (auth()->user()->isResponsableEntreprise() && $bulletin->entreprise_id != auth()->user()->entreprise_id) {
+        if (auth()->user()->isResponsableEntreprise() && !auth()->user()->hasAccessToEntreprise($bulletin->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 

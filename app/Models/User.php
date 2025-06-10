@@ -50,6 +50,11 @@ class User extends Authenticatable
         return $this->belongsTo(Entreprise::class);
     }
 
+    public function entreprises()
+    {
+        return $this->belongsToMany(Entreprise::class, 'user_entreprise');
+    }
+
     public function employe()
     {
         return $this->hasOne(Employe::class);
@@ -68,5 +73,31 @@ class User extends Authenticatable
     public function isEmploye()
     {
         return $this->role === 'employe';
+    }
+
+    public function hasAccessToEntreprise($entrepriseId)
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+        
+        if ($this->isResponsableEntreprise() && $this->entreprise_id == $entrepriseId) {
+            return true;
+        }
+        
+        return $this->entreprises()->where('entreprise_id', $entrepriseId)->exists();
+    }
+
+    public function getAccessibleEntreprises()
+    {
+        if ($this->isAdmin()) {
+            return Entreprise::all();
+        }
+        
+        if ($this->isResponsableEntreprise() && $this->entreprise_id) {
+            return Entreprise::where('id', $this->entreprise_id)->get();
+        }
+        
+        return $this->entreprises;
     }
 }

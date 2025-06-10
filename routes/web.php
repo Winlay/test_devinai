@@ -8,6 +8,7 @@ use App\Http\Controllers\ElementSalaireController;
 use App\Http\Controllers\AbsenceController;
 use App\Http\Controllers\RetenueController;
 use App\Http\Controllers\BulletinSalaireController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -26,6 +27,7 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::resource('entreprises', EntrepriseController::class);
+    Route::resource('users', UserController::class);
 });
 
 Route::middleware(['auth', 'responsable_entreprise'])->group(function () {

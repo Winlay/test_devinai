@@ -35,6 +35,11 @@ class Entreprise extends Model
         return $this->hasMany(User::class);
     }
 
+    public function assignedUsers()
+    {
+        return $this->belongsToMany(User::class, 'user_entreprise');
+    }
+
     public function bulletinSalaires()
     {
         return $this->hasMany(BulletinSalaire::class);

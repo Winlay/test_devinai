@@ -19,8 +19,9 @@ class AbsenceController extends Controller
         $query = Absence::with('employe.entreprise');
         
         if (!auth()->user()->isAdmin()) {
-            $query->whereHas('employe', function($q) {
-                $q->where('entreprise_id', auth()->user()->entreprise_id);
+            $accessibleEntreprises = auth()->user()->getAccessibleEntreprises();
+            $query->whereHas('employe', function($q) use ($accessibleEntreprises) {
+                $q->whereIn('entreprise_id', $accessibleEntreprises);
             });
         }
         
@@ -32,7 +33,7 @@ class AbsenceController extends Controller
     {
         $employes = auth()->user()->isAdmin() 
             ? Employe::with('entreprise')->get()
-            : Employe::where('entreprise_id', auth()->user()->entreprise_id)->get();
+            : Employe::whereIn('entreprise_id', auth()->user()->getAccessibleEntreprises())->get();
             
         return view('absences.create', compact('employes'));
     }
@@ -50,7 +51,7 @@ class AbsenceController extends Controller
 
         $employe = Employe::findOrFail($validated['employe_id']);
         
-        if (!auth()->user()->isAdmin() && $employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -68,7 +69,7 @@ class AbsenceController extends Controller
 
     public function show(Absence $absence)
     {
-        if (!auth()->user()->isAdmin() && $absence->employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($absence->employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -78,20 +79,20 @@ class AbsenceController extends Controller
 
     public function edit(Absence $absence)
     {
-        if (!auth()->user()->isAdmin() && $absence->employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($absence->employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
         $employes = auth()->user()->isAdmin() 
             ? Employe::with('entreprise')->get()
-            : Employe::where('entreprise_id', auth()->user()->entreprise_id)->get();
+            : Employe::whereIn('entreprise_id', auth()->user()->getAccessibleEntreprises())->get();
             
         return view('absences.edit', compact('absence', 'employes'));
     }
 
     public function update(Request $request, Absence $absence)
     {
-        if (!auth()->user()->isAdmin() && $absence->employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($absence->employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -107,7 +108,7 @@ class AbsenceController extends Controller
 
         $employe = Employe::findOrFail($validated['employe_id']);
         
-        if (!auth()->user()->isAdmin() && $employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -125,7 +126,7 @@ class AbsenceController extends Controller
 
     public function destroy(Absence $absence)
     {
-        if (!auth()->user()->isAdmin() && $absence->employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($absence->employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 

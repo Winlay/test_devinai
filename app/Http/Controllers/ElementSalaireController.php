@@ -18,8 +18,9 @@ class ElementSalaireController extends Controller
         $query = ElementSalaire::with('employe.entreprise');
         
         if (!auth()->user()->isAdmin()) {
-            $query->whereHas('employe', function($q) {
-                $q->where('entreprise_id', auth()->user()->entreprise_id);
+            $accessibleEntreprises = auth()->user()->getAccessibleEntreprises();
+            $query->whereHas('employe', function($q) use ($accessibleEntreprises) {
+                $q->whereIn('entreprise_id', $accessibleEntreprises);
             });
         }
         
@@ -31,7 +32,7 @@ class ElementSalaireController extends Controller
     {
         $employes = auth()->user()->isAdmin() 
             ? Employe::with('entreprise')->get()
-            : Employe::where('entreprise_id', auth()->user()->entreprise_id)->get();
+            : Employe::whereIn('entreprise_id', auth()->user()->getAccessibleEntreprises())->get();
             
         return view('element-salaires.create', compact('employes'));
     }
@@ -49,7 +50,7 @@ class ElementSalaireController extends Controller
 
         $employe = Employe::findOrFail($validated['employe_id']);
         
-        if (!auth()->user()->isAdmin() && $employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -61,7 +62,7 @@ class ElementSalaireController extends Controller
 
     public function show(ElementSalaire $elementSalaire)
     {
-        if (!auth()->user()->isAdmin() && $elementSalaire->employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($elementSalaire->employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -71,20 +72,20 @@ class ElementSalaireController extends Controller
 
     public function edit(ElementSalaire $elementSalaire)
     {
-        if (!auth()->user()->isAdmin() && $elementSalaire->employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($elementSalaire->employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
         $employes = auth()->user()->isAdmin() 
             ? Employe::with('entreprise')->get()
-            : Employe::where('entreprise_id', auth()->user()->entreprise_id)->get();
+            : Employe::whereIn('entreprise_id', auth()->user()->getAccessibleEntreprises())->get();
             
         return view('element-salaires.edit', compact('elementSalaire', 'employes'));
     }
 
     public function update(Request $request, ElementSalaire $elementSalaire)
     {
-        if (!auth()->user()->isAdmin() && $elementSalaire->employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($elementSalaire->employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -99,7 +100,7 @@ class ElementSalaireController extends Controller
 
         $employe = Employe::findOrFail($validated['employe_id']);
         
-        if (!auth()->user()->isAdmin() && $employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -111,7 +112,7 @@ class ElementSalaireController extends Controller
 
     public function destroy(ElementSalaire $elementSalaire)
     {
-        if (!auth()->user()->isAdmin() && $elementSalaire->employe->entreprise_id != auth()->user()->entreprise_id) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->hasAccessToEntreprise($elementSalaire->employe->entreprise_id)) {
             abort(403, 'Accès non autorisé');
         }
 
