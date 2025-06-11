@@ -18,8 +18,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('user_entreprise', function (Blueprint $table) {
-            $table->truncate();
-        });
+        DB::table('user_entreprise')->truncate();
     }
 };
